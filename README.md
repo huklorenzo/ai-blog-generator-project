@@ -9,7 +9,7 @@ Integrates with **OpenAI's GPT models** to produce unique articles from user-sub
 ## ✨ Features
 
 - ✍️ Generate AI-written blog articles from a given topic
-- 📚 View, edit, and delete saved blog posts
+- 📚 View and generate blog posts
 - ⚡ FastAPI backend with async API handling
 - ⚛️ Clean and responsive React frontend
 - 💾 Database storage (PostgreSQL or SQLite)
@@ -37,7 +37,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-2. Create a .env file inside backend/:
+2. Create a `.env` file inside backend/:
 ```
 OPENAI_API_KEY=your-openai-api-key
 DATABASE_URL=sqlite:///./blog.db
