@@ -1,9 +1,15 @@
-import openai
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from . import crud, models, schemas
 from .database import SessionLocal, engine
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+import os
+
+import openai
+from openai import OpenAI
+from dotenv import load_dotenv
+import os
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -18,7 +24,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-openai.api_key = ""
+load_dotenv()  # Load environment variables from .env
+
+client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY")
+)
 
 def get_db():
     db = SessionLocal()
@@ -33,20 +43,26 @@ def ping():
 
 @app.post("/generate", response_model=schemas.Blog)
 async def generate_blog(topic: str, db: Session = Depends(get_db)):
-    prompt = f"Write a blog post about {topic}"
-    response = openai.Completion.create(
-        model="text-davinci-003",
-        prompt=prompt,
-        max_tokens=500,
-    )
-    
-    content = response.choices[0]["text"]
-    blog = schemas.BlogCreate(title=topic, body=content)
-    return crud.create_blog(db=db, blog=blog)
+    prompt = f"Write a detailed blog post about {topic}."
 
-@app.post("/blogs/", response_model=list[schemas.Blog])
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful blog writing assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=500,
+        temperature=0.7,
+    )
+
+    content = response.choices[0].message.content.strip()
+
+    blog = schemas.BlogCreate(title=topic, content=content)
+    return crud.create_blog(db, blog)
+
+@app.get("/blogs", response_model=list[schemas.Blog])
 async def read_blogs(db: Session = Depends(get_db)):
-    return crud.get_blogs(db=db)
+    return crud.get_blogs(db)
 
 @app.delete("/blogs/{blog_id}")
 async def delete_blog(blog_id: int, db: Session = Depends(get_db)):
